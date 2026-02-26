@@ -955,49 +955,76 @@
                 return;
             }
 
-            let html = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>時刻</th>
-                            <th>曜日</th>
-                            <th>ラベル</th>
-                            <th>有効</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+            const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+            const DAY_FULL_LABELS = { mon: '月曜日', tue: '火曜日', wed: '水曜日', thu: '木曜日', fri: '金曜日', sat: '土曜日', sun: '日曜日' };
 
-            // 時刻順にソート
-            const sorted = [...data].sort((a, b) => a.time.localeCompare(b.time));
+            // 曜日ごとにスケジュールを振り分け（1つのスケジュールが複数曜日を持つ場合、各曜日に表示）
+            const byDay = {};
+            DAY_ORDER.forEach(d => byDay[d] = []);
 
-            sorted.forEach(schedule => {
-                const dayLabels = schedule.days.split(',').map(d => DAY_LABELS[d] || d).join(' ');
-                const enabledChecked = schedule.enabled ? 'checked' : '';
-
-                html += `
-                    <tr>
-                        <td><strong>${escapeHtml(schedule.time)}</strong></td>
-                        <td>${escapeHtml(dayLabels)}</td>
-                        <td>${escapeHtml(schedule.label || '-')}</td>
-                        <td>
-                            <label class="toggle-switch">
-                                <input type="checkbox" ${enabledChecked} onchange="toggleScheduleEnabled(${schedule.id}, this.checked)">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </td>
-                        <td>
-                            <div class="actions">
-                                <button class="btn btn-primary" onclick="openEditModal(${schedule.id})">編集</button>
-                                <button class="btn btn-danger" onclick="deleteSchedule(${schedule.id})">削除</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+            data.forEach(schedule => {
+                const days = schedule.days.split(',');
+                days.forEach(d => {
+                    if (byDay[d]) {
+                        byDay[d].push(schedule);
+                    }
+                });
             });
 
-            html += '</tbody></table>';
+            let html = '';
+
+            DAY_ORDER.forEach(day => {
+                const items = byDay[day];
+                if (items.length === 0) return;
+
+                // 時刻順にソート
+                const sorted = [...items].sort((a, b) => a.time.localeCompare(b.time));
+
+                const dayColor = (day === 'sat') ? '#2196F3' : (day === 'sun') ? '#e74c3c' : '#333';
+
+                html += `<h3 style="margin: 20px 0 10px; color: ${dayColor}; border-bottom: 2px solid ${dayColor}; padding-bottom: 5px;">${DAY_FULL_LABELS[day]}</h3>`;
+                html += `
+                    <table style="margin-bottom: 15px;">
+                        <thead>
+                            <tr>
+                                <th>時刻</th>
+                                <th>ラベル</th>
+                                <th>対象曜日</th>
+                                <th>有効</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                sorted.forEach(schedule => {
+                    const allDayLabels = schedule.days.split(',').map(d => DAY_LABELS[d] || d).join(' ');
+                    const enabledChecked = schedule.enabled ? 'checked' : '';
+
+                    html += `
+                        <tr>
+                            <td><strong>${escapeHtml(schedule.time)}</strong></td>
+                            <td>${escapeHtml(schedule.label || '-')}</td>
+                            <td>${escapeHtml(allDayLabels)}</td>
+                            <td>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${enabledChecked} onchange="toggleScheduleEnabled(${schedule.id}, this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    <button class="btn btn-primary" onclick="openEditModal(${schedule.id})">編集</button>
+                                    <button class="btn btn-danger" onclick="deleteSchedule(${schedule.id})">削除</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+            });
+
             container.innerHTML = html;
         }
 
