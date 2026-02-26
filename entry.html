@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>入室通知 - 生徒用</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px;
+            padding-left: 45px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 20px;
+        }
+
+        .students-list {
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .student-item {
+            padding: 15px;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .student-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateX(5px);
+        }
+
+        .student-item.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .student-name {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .checkmark {
+            display: none;
+            font-size: 24px;
+        }
+
+        .student-item.selected .checkmark {
+            display: block;
+        }
+
+        .buttons-container {
+            display: none;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .entry-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            flex: 1;
+            font-weight: bold;
+        }
+
+        .exit-button {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            flex: 1;
+            font-weight: bold;
+        }
+
+        .entry-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .entry-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .entry-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+            text-align: center;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .selected-info {
+            background: #f8f9ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .selected-info .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .selected-info .name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .admin-link a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .admin-link a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>入室通知</h1>
+            <p class="subtitle"><span id="classroomName">-</span> - 4桁IDを入力またはQRコードをスキャン</p>
+
+            <div class="search-section">
+                <div class="search-box">
+                    <input
+                        type="text"
+                        id="studentCodeInput"
+                        placeholder="例: 0001"
+                        maxlength="4"
+                        pattern="[0-9]*"
+                        inputmode="numeric"
+                        style="font-size: 32px; text-align: center; padding: 20px;">
+                </div>
+
+                <div style="text-align: center; margin: 20px 0;">
+                    <button id="qrScanButton" onclick="toggleQRScanner()" class="btn btn-primary" style="padding: 15px 30px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; background: #667eea; color: white;">
+                        QRコードをスキャン
+                    </button>
+                </div>
+
+                <div id="qrReader" style="display: none; margin: 20px 0; border: 2px solid #667eea; border-radius: 8px; overflow: hidden;"></div>
+            </div>
+
+            <div id="selectedInfo" class="selected-info">
+                <div class="label">確認してください</div>
+                <div class="name" id="selectedName"></div>
+            </div>
+
+            <div id="buttonsContainer" class="buttons-container">
+                <button id="entryButton" class="entry-button" onclick="notifyEntry()">
+                    入室する
+                </button>
+                <button id="exitButton" class="exit-button" onclick="notifyExit()">
+                    退室する
+                </button>
+            </div>
+
+            <div id="message" class="message"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://entry-notification.entry-notify-system.workers.dev';
+        let allStudents = [];
+        let selectedStudent = null;
+
+        // 認証チェック
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const classroom = localStorage.getItem('classroom');
+
+            if (!token || !classroom) {
+                window.location.href = 'login.html';
+                return false;
+            }
+
+            // 教室名を表示
+            try {
+                const classroomData = JSON.parse(classroom);
+                document.getElementById('classroomName').textContent = classroomData.name;
+            } catch (e) {
+                console.error('教室情報の読み込みエラー:', e);
+            }
+
+            return token;
+        }
+
+        // 認証ヘッダー付きでfetch
+        async function authFetch(url, options = {}) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                throw new Error('認証が必要です');
+            }
+
+            const headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+
+            const response = await fetch(url, { ...options, headers });
+
+            if (response.status === 401) {
+                // トークン期限切れ
+                localStorage.removeItem('token');
+                localStorage.removeItem('classroom');
+                window.location.href = 'login.html';
+                throw new Error('セッションが切れました');
+            }
+
+            return response;
+        }
+
+        // ログアウト
+        function logout() {
+            if (confirm('ログアウトしますか？')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('classroom');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ページ読み込み時
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!checkAuth()) return;
+
+            // 4桁ID入力機能
+            const input = document.getElementById('studentCodeInput');
+            input.addEventListener('input', (e) => {
+                // 数字のみ受け付ける
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+
+                // 4桁入力されたら自動で生徒を検索
+                if (e.target.value.length === 4) {
+                    verifyStudentCode(e.target.value);
+                } else {
+                    // 4桁未満ならリセット
+                    resetSelection();
+                }
+            });
+
+            // Enterキーでも検索
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && e.target.value.length === 4) {
+                    verifyStudentCode(e.target.value);
+                }
+            });
+
+            // フォーカス
+            input.focus();
+        });
+
+        // 生徒コードを検証
+        async function verifyStudentCode(code) {
+            try {
+                const response = await authFetch(`${API_URL}/students`);
+                allStudents = await response.json();
+
+                const student = allStudents.find(s => s.student_code === code);
+
+                if (student) {
+                    selectedStudent = student;
+                    document.getElementById('selectedName').textContent = student.name;
+                    document.getElementById('selectedInfo').style.display = 'block';
+
+                    // 入退室状態を確認してボタンを切り替え
+                    await updateButtonsByStatus(code);
+                } else {
+                    showMessage('IDが見つかりません', 'error');
+                    resetSelection();
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                showMessage('エラーが発生しました', 'error');
+            }
+        }
+
+        // 入退室状態を確認してボタンを表示
+        async function updateButtonsByStatus(code) {
+            try {
+                const response = await authFetch(`${API_URL}/entry-status`, {
+                    method: 'POST',
+                    body: JSON.stringify({ student_code: code })
+                });
+
+                const data = await response.json();
+                const entryButton = document.getElementById('entryButton');
+                const exitButton = document.getElementById('exitButton');
+                const buttonsContainer = document.getElementById('buttonsContainer');
+
+                if (data.status === 'entered') {
+                    // 入室中 → 退室ボタンのみ表示
+                    entryButton.style.display = 'none';
+                    exitButton.style.display = 'block';
+                    exitButton.style.flex = '1';
+                } else {
+                    // 未入室または退室済み → 入室ボタンのみ表示
+                    entryButton.style.display = 'block';
+                    entryButton.style.flex = '1';
+                    exitButton.style.display = 'none';
+                }
+
+                buttonsContainer.style.display = 'flex';
+            } catch (error) {
+                console.error('状態確認エラー:', error);
+                // エラー時は両方表示
+                document.getElementById('buttonsContainer').style.display = 'flex';
+            }
+        }
+
+        // 検索フィルター（頭文字検索対応）
+        function filterStudents(query) {
+            const queryLower = query.toLowerCase().trim();
+
+            console.log('検索クエリ:', queryLower);
+            console.log('全生徒数:', allStudents.length);
+
+            const filtered = allStudents.filter(s => {
+                const name = s.name.toLowerCase();
+                const kana = (s.name_kana || '').toLowerCase();
+
+                console.log(`生徒: ${s.name}, ふりがな: "${kana}"`);
+
+                // 名前で完全一致または部分一致
+                if (name.includes(queryLower)) {
+                    console.log('  → 名前でヒット');
+                    return true;
+                }
+
+                // ふりがなで完全一致または部分一致
+                if (kana.includes(queryLower)) {
+                    console.log('  → ふりがなでヒット');
+                    return true;
+                }
+
+                // 頭文字検索（ふりがなの最初の文字）
+                if (kana.startsWith(queryLower)) {
+                    console.log('  → 頭文字でヒット');
+                    return true;
+                }
+
+                return false;
+            });
+
+            console.log('検索結果:', filtered.length, '件');
+
+            if (filtered.length > 0) {
+                renderStudentsList(filtered);
+                document.getElementById('studentsList').style.display = 'block';
+                document.getElementById('emptyState').style.display = 'none';
+            } else {
+                document.getElementById('studentsList').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+            }
+        }
+
+        // 生徒リストを描画
+        function renderStudentsList(students) {
+            const list = document.getElementById('studentsList');
+            list.innerHTML = students.map(student => `
+                <div class="student-item" onclick="selectStudent(${student.id})">
+                    <div>
+                        <span class="student-name">${escapeHtml(student.name)}</span>
+                        <div style="font-size: 12px; color: #999; margin-top: 2px;">${escapeHtml(student.name_kana || '')}</div>
+                    </div>
+                    <span class="checkmark">✓</span>
+                </div>
+            `).join('');
+        }
+
+        // 生徒を選択
+        function selectStudent(id) {
+            selectedStudent = allStudents.find(s => s.id === id);
+
+            // 選択状態を表示
+            document.querySelectorAll('.student-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+
+            // 選択情報を表示
+            document.getElementById('selectedName').textContent = selectedStudent.name;
+            document.getElementById('selectedInfo').style.display = 'block';
+            document.getElementById('buttonsContainer').style.display = 'flex';
+
+            // リストを隠す
+            setTimeout(hideStudentsList, 300);
+        }
+
+        // 生徒リストを隠す
+        function hideStudentsList() {
+            document.getElementById('studentsList').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+        }
+
+        // 入室通知を送信
+        async function notifyEntry() {
+            if (!selectedStudent) return;
+
+            const button = document.getElementById('entryButton');
+            const messageDiv = document.getElementById('message');
+
+            button.disabled = true;
+            button.textContent = '送信中...';
+            messageDiv.style.display = 'none';
+
+            try {
+                const response = await authFetch(`${API_URL}/entry`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        student_code: selectedStudent.student_code
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.alreadyEntered) {
+                        // 既に入室済み
+                        const entryTime = new Date(data.entryTime);
+                        const timeStr = entryTime.toLocaleTimeString('ja-JP', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            timeZone: 'Asia/Tokyo'
+                        });
+                        showMessage(`${selectedStudent.name}さんは今日は既に入室済みです（${timeStr}）`, 'error');
+
+                        // リセット
+                        setTimeout(() => {
+                            resetForm();
+                        }, 3000);
+                    } else {
+                        // 新規入室
+                        playSuccessSound();
+                        showMessage(`${selectedStudent.name}さんの入室を通知しました！`, 'success');
+
+                        // ボタンを退室ボタンのみに切り替え
+                        document.getElementById('entryButton').style.display = 'none';
+                        document.getElementById('exitButton').style.display = 'block';
+                        document.getElementById('exitButton').style.flex = '1';
+
+                        // リセット
+                        setTimeout(() => {
+                            resetForm();
+                        }, 2000);
+                    }
+                } else {
+                    throw new Error(data.error || '通知の送信に失敗しました');
+                }
+            } catch (error) {
+                showMessage('エラーが発生しました: ' + error.message, 'error');
+                button.disabled = false;
+                button.textContent = '入室する';
+            }
+        }
+
+        // 退室通知を送信
+        async function notifyExit() {
+            if (!selectedStudent) return;
+
+            const button = document.getElementById('exitButton');
+            const messageDiv = document.getElementById('message');
+
+            button.disabled = true;
+            button.textContent = '送信中...';
+            messageDiv.style.display = 'none';
+
+            try {
+                const response = await authFetch(`${API_URL}/exit`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        student_code: selectedStudent.student_code
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.alreadyExited) {
+                        // 既に退室済み
+                        const exitTime = new Date(data.exitTime);
+                        const timeStr = exitTime.toLocaleTimeString('ja-JP', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            timeZone: 'Asia/Tokyo'
+                        });
+                        showMessage(`${selectedStudent.name}さんは今日は既に退室済みです（${timeStr}）`, 'error');
+
+                        // リセット
+                        setTimeout(() => {
+                            resetForm();
+                        }, 3000);
+                    } else {
+                        // 新規退室
+                        playSuccessSound();
+                        showMessage(`${selectedStudent.name}さんの退室を通知しました！`, 'success');
+
+                        // ボタンを入室ボタンのみに切り替え
+                        document.getElementById('entryButton').style.display = 'block';
+                        document.getElementById('entryButton').style.flex = '1';
+                        document.getElementById('exitButton').style.display = 'none';
+
+                        // リセット
+                        setTimeout(() => {
+                            resetForm();
+                        }, 2000);
+                    }
+                } else {
+                    throw new Error(data.error || '通知の送信に失敗しました');
+                }
+            } catch (error) {
+                showMessage('エラーが発生しました: ' + error.message, 'error');
+                button.disabled = false;
+                button.textContent = '退室する';
+            }
+        }
+
+        // フォームをリセット
+        function resetForm() {
+            selectedStudent = null;
+            document.getElementById('studentCodeInput').value = '';
+            document.getElementById('selectedInfo').style.display = 'none';
+            document.getElementById('buttonsContainer').style.display = 'none';
+            document.getElementById('entryButton').disabled = false;
+            document.getElementById('entryButton').textContent = '入室する';
+            document.getElementById('exitButton').disabled = false;
+            document.getElementById('exitButton').textContent = '退室する';
+            document.getElementById('message').style.display = 'none';
+            document.getElementById('studentCodeInput').focus();
+        }
+
+        // 選択をリセット
+        function resetSelection() {
+            selectedStudent = null;
+            document.getElementById('selectedInfo').style.display = 'none';
+            document.getElementById('buttonsContainer').style.display = 'none';
+        }
+
+        // メッセージ表示
+        function showMessage(message, type) {
+            const el = document.getElementById('message');
+            el.textContent = message;
+            el.className = `message ${type}`;
+            el.style.display = 'block';
+        }
+
+        // HTMLエスケープ
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 効果音を鳴らす（Web Audio API使用）
+        function playSuccessSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                // 明るい成功音（ピロリン♪）
+                const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5
+                const duration = 0.15;
+
+                frequencies.forEach((freq, index) => {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.frequency.value = freq;
+                    oscillator.type = 'sine';
+
+                    const startTime = audioContext.currentTime + (index * duration);
+                    gainNode.gain.setValueAtTime(0.3, startTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + duration);
+                });
+            } catch (error) {
+                console.log('効果音の再生に失敗しました:', error);
+            }
+        }
+
+        // QRコードスキャナー
+        let html5QrCode = null;
+        let isScanning = false;
+
+        function toggleQRScanner() {
+            const qrReader = document.getElementById('qrReader');
+            const button = document.getElementById('qrScanButton');
+
+            if (isScanning) {
+                // スキャン停止
+                stopQRScanner();
+            } else {
+                // スキャン開始
+                startQRScanner();
+            }
+        }
+
+        function startQRScanner() {
+            const qrReader = document.getElementById('qrReader');
+            const button = document.getElementById('qrScanButton');
+
+            qrReader.style.display = 'block';
+            button.textContent = 'スキャンを停止';
+            isScanning = true;
+
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qrReader");
+            }
+
+            html5QrCode.start(
+                { facingMode: "environment" }, // 背面カメラを使用
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                },
+                (decodedText, decodedResult) => {
+                    // QRコード読み取り成功
+                    console.log(`QRコード読み取り: ${decodedText}`);
+
+                    // 4桁の数字かチェック
+                    if (/^\d{4}$/.test(decodedText)) {
+                        document.getElementById('studentCodeInput').value = decodedText;
+                        verifyStudentCode(decodedText);
+                        stopQRScanner();
+                    } else {
+                        showMessage('正しいQRコードではありません', 'error');
+                    }
+                },
+                (errorMessage) => {
+                    // エラーは無視（スキャン中は常にエラーが出る）
+                }
+            ).catch((err) => {
+                console.error('カメラの起動に失敗:', err);
+                showMessage('カメラの起動に失敗しました。手入力してください。', 'error');
+                stopQRScanner();
+            });
+        }
+
+        function stopQRScanner() {
+            const qrReader = document.getElementById('qrReader');
+            const button = document.getElementById('qrScanButton');
+
+            if (html5QrCode && isScanning) {
+                html5QrCode.stop().then(() => {
+                    qrReader.style.display = 'none';
+                    button.textContent = 'QRコードをスキャン';
+                    isScanning = false;
+                }).catch((err) => {
+                    console.error('スキャナー停止エラー:', err);
+                });
+            }
+        }
+    </script>
+</body>
+</html>

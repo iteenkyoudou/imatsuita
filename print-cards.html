@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生徒カード印刷</title>
+    <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .no-print {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .no-print button {
+            background-color: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+
+        .no-print button:hover {
+            background-color: #5568d3;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10mm;
+            max-width: 210mm;
+            margin: 0 auto;
+            background-color: white;
+            padding: 10mm;
+        }
+
+        .card {
+            width: 90mm;
+            height: 55mm;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 8mm;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
+            page-break-inside: avoid;
+        }
+
+        .card-id {
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 4mm;
+        }
+
+        .card-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4mm;
+            text-align: center;
+        }
+
+        .card-qr {
+            margin-top: 2mm;
+        }
+
+        .card-qr canvas {
+            display: block;
+        }
+
+        /* 印刷用スタイル */
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none;
+            }
+
+            .cards-container {
+                padding: 0;
+                gap: 5mm;
+            }
+
+            .card {
+                page-break-inside: avoid;
+            }
+
+            /* A4用紙サイズ設定 */
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <h1 style="margin-bottom: 20px;">生徒カード印刷プレビュー</h1>
+        <p style="margin-bottom: 15px; color: #666; font-size: 14px;">印刷後はラミネート加工をお勧めします</p>
+        <button onclick="window.print()">印刷する</button>
+        <button onclick="window.location.href='admin.html'" style="background-color: #6c757d;">管理画面に戻る</button>
+    </div>
+
+    <div class="cards-container" id="cardsContainer">
+        <!-- カードがここに動的に追加されます -->
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            try {
+                // ローカルストレージから生徒データを取得
+                const studentsJson = localStorage.getItem('printStudents');
+
+                if (!studentsJson) {
+                    document.body.innerHTML = '<div style="text-align: center; margin: 50px;"><h2>印刷データが見つかりません</h2><p>管理画面から「カード印刷」ボタンをクリックしてください</p></div>';
+                    return;
+                }
+
+                const students = JSON.parse(studentsJson);
+                const container = document.getElementById('cardsContainer');
+
+                if (typeof QRCode === 'undefined') {
+                    document.body.innerHTML = '<div style="text-align: center; margin: 50px;"><h2>QRコードライブラリの読み込みに失敗しました</h2></div>';
+                    return;
+                }
+
+                students.forEach(student => {
+                    // カード要素を作成
+                    const card = document.createElement('div');
+                    card.className = 'card';
+
+                    // ID表示
+                    const idDiv = document.createElement('div');
+                    idDiv.className = 'card-id';
+                    idDiv.textContent = `ID: ${student.student_code}`;
+                    card.appendChild(idDiv);
+
+                    // 名前表示
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'card-name';
+                    nameDiv.textContent = student.name;
+                    card.appendChild(nameDiv);
+
+                    // QRコード生成用のdiv
+                    const qrDiv = document.createElement('div');
+                    qrDiv.className = 'card-qr';
+                    qrDiv.id = `qr-${student.id}`;
+                    card.appendChild(qrDiv);
+
+                    // コンテナに追加
+                    container.appendChild(card);
+
+                    // QRコード生成
+                    try {
+                        new QRCode(qrDiv, {
+                            text: student.student_code,
+                            width: 80,
+                            height: 80,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    } catch (error) {
+                        console.error('QRコード生成エラー:', error);
+                        qrDiv.textContent = 'QR生成失敗';
+                    }
+                });
+
+                // データをクリア（次回のために）
+                localStorage.removeItem('printStudents');
+            } catch (error) {
+                console.error('エラー:', error);
+                document.body.innerHTML = '<div style="text-align: center; margin: 50px;"><h2>エラーが発生しました</h2><p>' + error.message + '</p></div>';
+            }
+        });
+    </script>
+</body>
+</html>

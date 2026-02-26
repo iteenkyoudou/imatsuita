@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>チャイム設定 - 入室通知システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="time"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input[type="time"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .number {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        /* 曜日チェックボックス */
+        .day-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .day-checkbox {
+            display: none;
+        }
+
+        .day-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .day-label:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .day-checkbox:checked + .day-label {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        /* トグルスイッチ */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #667eea;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+
+        /* チャイム稼働インジケーター */
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .status-indicator.active {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.inactive {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+
+        /* コントロールエリア */
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .controls .btn {
+            padding: 15px 30px;
+            font-size: 16px;
+        }
+
+        .info-note {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        /* モーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 10px;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin-bottom: 5px;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* チャイム通知 */
+        .chime-notification {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            z-index: 2000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        @media (max-width: 600px) {
+            .stats {
+                flex-direction: column;
+            }
+            .day-label {
+                width: 38px;
+                height: 38px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>チャイム設定</h1>
+                    <p class="subtitle">入室通知システム - <span id="classroomName">-</span></p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <a href="admin.html" class="btn btn-primary" style="text-decoration: none; display: inline-block;">管理画面</a>
+                    <button class="btn btn-secondary" onclick="logout()">ログアウト</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>チャイム状態</h3>
+                <div class="number" id="chimeStatus">
+                    <span class="status-indicator inactive" id="statusIndicator"></span>
+                    <span id="statusText">停止中</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>次回チャイム</h3>
+                <div class="number" id="nextChime">--:--</div>
+                <div id="nextChimeLabel" style="font-size: 14px; margin-top: 5px; opacity: 0.9;"></div>
+            </div>
+            <div class="stat-card">
+                <h3>登録スケジュール</h3>
+                <div class="number" id="scheduleCount">0</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">チャイムコントロール</h2>
+            <div class="controls">
+                <button id="toggleChimeBtn" class="btn btn-success" onclick="toggleChime()">チャイムを開始する</button>
+                <button class="btn btn-secondary" onclick="testPlayChime()">テスト再生</button>
+            </div>
+            <div class="info-note">
+                このページを開いたままにしてください。ページを閉じるとチャイムは鳴りません。<br>
+                デバイスのスリープ設定をオフにすることをおすすめします。
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">新しいスケジュールを登録</h2>
+            <div id="addMessage" class="message"></div>
+            <form id="addScheduleForm">
+                <div class="form-group">
+                    <label for="scheduleTime">時刻 *</label>
+                    <input type="time" id="scheduleTime" required style="max-width: 200px;">
+                </div>
+                <div class="form-group">
+                    <label>曜日 *</label>
+                    <div class="day-selector">
+                        <input type="checkbox" id="day-mon" class="day-checkbox" value="mon" checked>
+                        <label for="day-mon" class="day-label">月</label>
+                        <input type="checkbox" id="day-tue" class="day-checkbox" value="tue" checked>
+                        <label for="day-tue" class="day-label">火</label>
+                        <input type="checkbox" id="day-wed" class="day-checkbox" value="wed" checked>
+                        <label for="day-wed" class="day-label">水</label>
+                        <input type="checkbox" id="day-thu" class="day-checkbox" value="thu" checked>
+                        <label for="day-thu" class="day-label">木</label>
+                        <input type="checkbox" id="day-fri" class="day-checkbox" value="fri" checked>
+                        <label for="day-fri" class="day-label">金</label>
+                        <input type="checkbox" id="day-sat" class="day-checkbox" value="sat">
+                        <label for="day-sat" class="day-label">土</label>
+                        <input type="checkbox" id="day-sun" class="day-checkbox" value="sun">
+                        <label for="day-sun" class="day-label">日</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="scheduleLabel">ラベル（任意）</label>
+                    <input type="text" id="scheduleLabel" placeholder="例: 1時間目開始" maxlength="50" style="max-width: 300px;">
+                </div>
+                <button type="submit" class="btn btn-primary">登録する</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">スケジュール一覧</h2>
+            <div id="scheduleMessage" class="message"></div>
+            <div id="scheduleTable"></div>
+        </div>
+    </div>
+
+    <!-- 編集モーダル -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>スケジュールを編集</h2>
+            </div>
+            <form id="editScheduleForm">
+                <input type="hidden" id="editScheduleId">
+                <div class="form-group">
+                    <label for="editScheduleTime">時刻 *</label>
+                    <input type="time" id="editScheduleTime" required style="max-width: 200px;">
+                </div>
+                <div class="form-group">
+                    <label>曜日 *</label>
+                    <div class="day-selector">
+                        <input type="checkbox" id="edit-day-mon" class="day-checkbox" value="mon">
+                        <label for="edit-day-mon" class="day-label">月</label>
+                        <input type="checkbox" id="edit-day-tue" class="day-checkbox" value="tue">
+                        <label for="edit-day-tue" class="day-label">火</label>
+                        <input type="checkbox" id="edit-day-wed" class="day-checkbox" value="wed">
+                        <label for="edit-day-wed" class="day-label">水</label>
+                        <input type="checkbox" id="edit-day-thu" class="day-checkbox" value="thu">
+                        <label for="edit-day-thu" class="day-label">木</label>
+                        <input type="checkbox" id="edit-day-fri" class="day-checkbox" value="fri">
+                        <label for="edit-day-fri" class="day-label">金</label>
+                        <input type="checkbox" id="edit-day-sat" class="day-checkbox" value="sat">
+                        <label for="edit-day-sat" class="day-label">土</label>
+                        <input type="checkbox" id="edit-day-sun" class="day-checkbox" value="sun">
+                        <label for="edit-day-sun" class="day-label">日</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editScheduleLabel">ラベル（任意）</label>
+                    <input type="text" id="editScheduleLabel" placeholder="例: 1時間目開始" maxlength="50" style="max-width: 300px;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">更新する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- チャイム通知バナー -->
+    <div id="chimeNotification" class="chime-notification"></div>
+
+    <script>
+        const API_URL = 'https://entry-notification.entry-notify-system.workers.dev';
+        let schedules = [];
+        let schedulerInterval = null;
+        let isChimeActive = false;
+        let lastPlayedKey = '';
+        let audioContext = null;
+        let statusUpdateInterval = null;
+
+        // ===== 認証 =====
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const classroom = localStorage.getItem('classroom');
+
+            if (!token || !classroom) {
+                window.location.href = 'login.html';
+                return false;
+            }
+
+            try {
+                const classroomData = JSON.parse(classroom);
+                document.getElementById('classroomName').textContent = classroomData.name;
+            } catch (e) {
+                console.error('教室情報の読み込みエラー:', e);
+            }
+
+            return token;
+        }
+
+        async function authFetch(url, options = {}) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                throw new Error('認証が必要です');
+            }
+
+            const headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+
+            const response = await fetch(url, { ...options, headers });
+
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('classroom');
+                window.location.href = 'login.html';
+                throw new Error('セッションが切れました');
+            }
+
+            return response;
+        }
+
+        function logout() {
+            if (confirm('ログアウトしますか？')) {
+                stopChimeScheduler();
+                localStorage.removeItem('token');
+                localStorage.removeItem('classroom');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ===== AudioContext管理 =====
+
+        function ensureAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            return audioContext;
+        }
+
+        // ===== ウェストミンスターチャイム（キンコンカンコン） =====
+
+        function playWestminsterChime() {
+            const ctx = ensureAudioContext();
+
+            // 学校チャイムの音階: G#4 -> F#4 -> E4 -> B3
+            const melody = [
+                { freq: 415.30, time: 0 },      // G#4 キン
+                { freq: 369.99, time: 0.75 },    // F#4 コン
+                { freq: 329.63, time: 1.5 },     // E4  カン
+                { freq: 246.94, time: 2.25 }     // B3  コン
+            ];
+
+            const noteDuration = 1.5;
+
+            melody.forEach(note => {
+                playBellNote(ctx, note.freq, note.time, noteDuration);
+            });
+        }
+
+        function playBellNote(ctx, frequency, startOffset, duration) {
+            const startTime = ctx.currentTime + startOffset;
+
+            // 基音
+            createPartial(ctx, frequency, startTime, duration, 0.3);
+            // 倍音（ベルの特徴的な音色）
+            createPartial(ctx, frequency * 2, startTime, duration * 0.6, 0.15);
+            // 高次倍音
+            createPartial(ctx, frequency * 3, startTime, duration * 0.4, 0.08);
+        }
+
+        function createPartial(ctx, freq, startTime, duration, maxGain) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+
+            // ベル風エンベロープ: 素早いアタック、緩やかなディケイ
+            gain.gain.setValueAtTime(maxGain, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        }
+
+        // ===== スケジュールCRUD =====
+
+        async function loadSchedules() {
+            try {
+                const response = await authFetch(`${API_URL}/chime-schedules`);
+                schedules = await response.json();
+                // localStorageにキャッシュ
+                localStorage.setItem('chimeSchedules', JSON.stringify(schedules));
+                renderScheduleTable(schedules);
+                updateStatusUI();
+            } catch (error) {
+                console.error('スケジュール読み込みエラー:', error);
+                // オフラインフォールバック
+                const cached = localStorage.getItem('chimeSchedules');
+                if (cached) {
+                    schedules = JSON.parse(cached);
+                    renderScheduleTable(schedules);
+                    updateStatusUI();
+                    showMessage('scheduleMessage', 'サーバーに接続できません。キャッシュされたスケジュールを使用しています。', 'error');
+                }
+            }
+        }
+
+        document.getElementById('addScheduleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const time = document.getElementById('scheduleTime').value;
+            const selectedDays = getSelectedDays('day-');
+            const label = document.getElementById('scheduleLabel').value;
+
+            if (!time) {
+                showMessage('addMessage', '時刻を入力してください', 'error');
+                return;
+            }
+
+            if (selectedDays.length === 0) {
+                showMessage('addMessage', '曜日を1つ以上選択してください', 'error');
+                return;
+            }
+
+            try {
+                const response = await authFetch(`${API_URL}/chime-schedules`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        time: time,
+                        days: selectedDays.join(','),
+                        label: label,
+                        enabled: true
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('addMessage', 'スケジュールを登録しました', 'success');
+                    document.getElementById('addScheduleForm').reset();
+                    // デフォルトの曜日チェックを復元（月〜金）
+                    ['mon', 'tue', 'wed', 'thu', 'fri'].forEach(d => {
+                        document.getElementById(`day-${d}`).checked = true;
+                    });
+                    loadSchedules();
+                } else {
+                    showMessage('addMessage', result.error || '登録に失敗しました', 'error');
+                }
+            } catch (error) {
+                console.error('登録エラー:', error);
+                showMessage('addMessage', 'エラーが発生しました', 'error');
+            }
+        });
+
+        async function deleteSchedule(id) {
+            if (!confirm('このスケジュールを削除してもよろしいですか？')) return;
+
+            try {
+                const response = await authFetch(`${API_URL}/chime-schedules/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showMessage('scheduleMessage', 'スケジュールを削除しました', 'success');
+                    loadSchedules();
+                } else {
+                    throw new Error('削除に失敗しました');
+                }
+            } catch (error) {
+                showMessage('scheduleMessage', error.message, 'error');
+            }
+        }
+
+        async function toggleScheduleEnabled(id, enabled) {
+            try {
+                const response = await authFetch(`${API_URL}/chime-schedules/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ enabled: enabled })
+                });
+
+                if (response.ok) {
+                    loadSchedules();
+                } else {
+                    throw new Error('更新に失敗しました');
+                }
+            } catch (error) {
+                showMessage('scheduleMessage', error.message, 'error');
+            }
+        }
+
+        // ===== 編集モーダル =====
+
+        function openEditModal(id) {
+            const schedule = schedules.find(s => s.id === id);
+            if (!schedule) return;
+
+            document.getElementById('editScheduleId').value = schedule.id;
+            document.getElementById('editScheduleTime').value = schedule.time;
+            document.getElementById('editScheduleLabel').value = schedule.label || '';
+
+            // 曜日チェックボックスをリセットしてセット
+            const days = schedule.days.split(',');
+            ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(d => {
+                document.getElementById(`edit-day-${d}`).checked = days.includes(d);
+            });
+
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        document.getElementById('editScheduleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('editScheduleId').value;
+            const time = document.getElementById('editScheduleTime').value;
+            const selectedDays = getSelectedDays('edit-day-');
+            const label = document.getElementById('editScheduleLabel').value;
+
+            if (selectedDays.length === 0) {
+                alert('曜日を1つ以上選択してください');
+                return;
+            }
+
+            try {
+                const response = await authFetch(`${API_URL}/chime-schedules/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        time: time,
+                        days: selectedDays.join(','),
+                        label: label
+                    })
+                });
+
+                if (response.ok) {
+                    showMessage('scheduleMessage', 'スケジュールを更新しました', 'success');
+                    closeEditModal();
+                    loadSchedules();
+                } else {
+                    throw new Error('更新に失敗しました');
+                }
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        // ===== テーブル描画 =====
+
+        const DAY_LABELS = { mon: '月', tue: '火', wed: '水', thu: '木', fri: '金', sat: '土', sun: '日' };
+
+        function renderScheduleTable(data) {
+            const container = document.getElementById('scheduleTable');
+
+            if (data.length === 0) {
+                container.innerHTML = '<div class="empty-state">スケジュールが登録されていません</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>時刻</th>
+                            <th>曜日</th>
+                            <th>ラベル</th>
+                            <th>有効</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            // 時刻順にソート
+            const sorted = [...data].sort((a, b) => a.time.localeCompare(b.time));
+
+            sorted.forEach(schedule => {
+                const dayLabels = schedule.days.split(',').map(d => DAY_LABELS[d] || d).join(' ');
+                const enabledChecked = schedule.enabled ? 'checked' : '';
+
+                html += `
+                    <tr>
+                        <td><strong>${escapeHtml(schedule.time)}</strong></td>
+                        <td>${escapeHtml(dayLabels)}</td>
+                        <td>${escapeHtml(schedule.label || '-')}</td>
+                        <td>
+                            <label class="toggle-switch">
+                                <input type="checkbox" ${enabledChecked} onchange="toggleScheduleEnabled(${schedule.id}, this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-primary" onclick="openEditModal(${schedule.id})">編集</button>
+                                <button class="btn btn-danger" onclick="deleteSchedule(${schedule.id})">削除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // ===== スケジューラ =====
+
+        function toggleChime() {
+            if (isChimeActive) {
+                stopChimeScheduler();
+            } else {
+                startChimeScheduler();
+            }
+        }
+
+        function startChimeScheduler() {
+            if (schedulerInterval) return;
+
+            // AudioContextをユーザー操作で初期化
+            ensureAudioContext();
+
+            isChimeActive = true;
+            localStorage.setItem('chimeActive', 'true');
+            updateToggleButton();
+            updateStatusUI();
+
+            schedulerInterval = setInterval(() => {
+                checkAndPlayChime();
+            }, 1000);
+        }
+
+        function stopChimeScheduler() {
+            if (schedulerInterval) {
+                clearInterval(schedulerInterval);
+                schedulerInterval = null;
+            }
+            isChimeActive = false;
+            localStorage.setItem('chimeActive', 'false');
+            updateToggleButton();
+            updateStatusUI();
+        }
+
+        function checkAndPlayChime() {
+            const now = new Date();
+            const tokyoTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+
+            const hours = String(tokyoTime.getHours()).padStart(2, '0');
+            const minutes = String(tokyoTime.getMinutes()).padStart(2, '0');
+            const currentTime = `${hours}:${minutes}`;
+
+            const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const currentDay = dayNames[tokyoTime.getDay()];
+
+            const playKey = `${currentTime}-${currentDay}`;
+            if (playKey === lastPlayedKey) return;
+
+            for (const schedule of schedules) {
+                if (!schedule.enabled) continue;
+                if (schedule.time !== currentTime) continue;
+
+                const scheduleDays = schedule.days.split(',');
+                if (!scheduleDays.includes(currentDay)) continue;
+
+                // チャイムを鳴らす
+                lastPlayedKey = playKey;
+                playWestminsterChime();
+                showChimeNotification(schedule.label || currentTime);
+                break;
+            }
+        }
+
+        function testPlayChime() {
+            // テスト再生（AudioContext初期化を兼ねる）
+            ensureAudioContext();
+            playWestminsterChime();
+            showChimeNotification('テスト再生');
+        }
+
+        // ===== ステータスUI =====
+
+        function updateToggleButton() {
+            const btn = document.getElementById('toggleChimeBtn');
+            if (isChimeActive) {
+                btn.textContent = 'チャイムを停止する';
+                btn.className = 'btn btn-danger';
+            } else {
+                btn.textContent = 'チャイムを開始する';
+                btn.className = 'btn btn-success';
+            }
+        }
+
+        function updateStatusUI() {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const scheduleCountEl = document.getElementById('scheduleCount');
+            const nextChimeEl = document.getElementById('nextChime');
+            const nextChimeLabelEl = document.getElementById('nextChimeLabel');
+
+            // チャイム状態
+            if (isChimeActive) {
+                indicator.className = 'status-indicator active';
+                statusText.textContent = '稼働中';
+            } else {
+                indicator.className = 'status-indicator inactive';
+                statusText.textContent = '停止中';
+            }
+
+            // スケジュール数
+            const enabledCount = schedules.filter(s => s.enabled).length;
+            scheduleCountEl.textContent = `${enabledCount} / ${schedules.length}`;
+
+            // 次回チャイム
+            const nextInfo = getNextChimeInfo();
+            if (nextInfo.schedule) {
+                nextChimeEl.textContent = nextInfo.schedule.time;
+                if (nextInfo.minutesUntil < 60) {
+                    nextChimeLabelEl.textContent = `あと${nextInfo.minutesUntil}分 ${nextInfo.schedule.label ? '(' + nextInfo.schedule.label + ')' : ''}`;
+                } else if (nextInfo.minutesUntil < 1440) {
+                    const hours = Math.floor(nextInfo.minutesUntil / 60);
+                    const mins = nextInfo.minutesUntil % 60;
+                    nextChimeLabelEl.textContent = `あと${hours}時間${mins}分 ${nextInfo.schedule.label ? '(' + nextInfo.schedule.label + ')' : ''}`;
+                } else {
+                    const days = Math.floor(nextInfo.minutesUntil / 1440);
+                    nextChimeLabelEl.textContent = `${days}日後 ${nextInfo.schedule.label ? '(' + nextInfo.schedule.label + ')' : ''}`;
+                }
+            } else {
+                nextChimeEl.textContent = '--:--';
+                nextChimeLabelEl.textContent = '有効なスケジュールがありません';
+            }
+        }
+
+        function getNextChimeInfo() {
+            const now = new Date();
+            const tokyoNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+            const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+            let closestMinutes = Infinity;
+            let closestSchedule = null;
+
+            for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+                const checkDate = new Date(tokyoNow);
+                checkDate.setDate(checkDate.getDate() + dayOffset);
+                const checkDay = dayNames[checkDate.getDay()];
+
+                for (const schedule of schedules) {
+                    if (!schedule.enabled) continue;
+                    if (!schedule.days.split(',').includes(checkDay)) continue;
+
+                    const [h, m] = schedule.time.split(':').map(Number);
+                    const scheduleDate = new Date(checkDate);
+                    scheduleDate.setHours(h, m, 0, 0);
+
+                    const diffMs = scheduleDate - tokyoNow;
+                    if (diffMs <= 0) continue;
+
+                    const diffMinutes = Math.floor(diffMs / 60000);
+                    if (diffMinutes < closestMinutes) {
+                        closestMinutes = diffMinutes;
+                        closestSchedule = schedule;
+                    }
+                }
+            }
+
+            return { schedule: closestSchedule, minutesUntil: closestMinutes };
+        }
+
+        // ===== チャイム通知バナー =====
+
+        function showChimeNotification(label) {
+            const el = document.getElementById('chimeNotification');
+            el.textContent = `🔔 ${label}`;
+            el.style.display = 'block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 5000);
+        }
+
+        // ===== ユーティリティ =====
+
+        function getSelectedDays(prefix) {
+            const days = [];
+            ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(d => {
+                if (document.getElementById(`${prefix}${d}`).checked) {
+                    days.push(d);
+                }
+            });
+            return days;
+        }
+
+        function showMessage(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `message ${type}`;
+            el.style.display = 'block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ===== 初期化 =====
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!checkAuth()) return;
+
+            loadSchedules();
+
+            // 前回稼働中だった場合は自動再開
+            if (localStorage.getItem('chimeActive') === 'true') {
+                startChimeScheduler();
+            }
+
+            // ステータスを定期更新（1分ごと）
+            statusUpdateInterval = setInterval(() => {
+                updateStatusUI();
+            }, 60000);
+        });
+
+        // タブ復帰時にチェック
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && isChimeActive) {
+                checkAndPlayChime();
+                updateStatusUI();
+            }
+        });
+
+        // モーダル外クリックで閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
+        };
+    </script>
+</body>
+</html>

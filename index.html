@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>「今着いた。」 - 入退室通知システム</title>
+    <meta name="description" content="教室や塾の入退室を保護者にリアルタイムでメール通知。QRコード対応の入退室管理システム。月額1,300円（税込）で無制限登録。">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* アニメーション定義 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* アニメーション用クラス */
+        .animate-on-scroll {
+            opacity: 0;
+        }
+
+        .animate-on-scroll.animated {
+            animation-duration: 1.2s;
+            animation-fill-mode: both;
+            animation-timing-function: ease-out;
+        }
+
+        .fade-in-up {
+            animation-name: fadeInUp;
+        }
+
+        .slide-in-right {
+            animation-name: slideInRight;
+        }
+
+        .slide-in-left {
+            animation-name: slideInLeft;
+        }
+
+        .scale-in {
+            animation-name: scaleIn;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .logo-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .logo-subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+
+        .nav {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .hero {
+            background: linear-gradient(90deg, #667eea 0%, #ffffff 100%);
+            color: white;
+            padding: 150px 20px 100px;
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .hero-content {
+            text-align: left;
+            animation: slideInLeft 1s ease-out;
+        }
+
+        .hero-image {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: slideInRight 1s ease-out;
+        }
+
+        .hero-image img {
+            max-width: 100%;
+            height: auto;
+            max-height: 500px;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .hero p {
+            font-size: 20px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 18px;
+            transition: transform 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            margin-left: 20px;
+        }
+
+        .section {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 0 20px;
+        }
+
+        .section h2 {
+            text-align: center;
+            font-size: 36px;
+            margin-bottom: 50px;
+            color: #333;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature {
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .feature h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .pricing {
+            background: #f8f9fa;
+            padding: 80px 20px;
+        }
+
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .pricing-card.featured {
+            border: 3px solid #667eea;
+            transform: scale(1.05);
+        }
+
+        .price {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+        }
+
+        .price span {
+            font-size: 20px;
+        }
+
+        .footer {
+            background: #333;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .footer-links {
+            margin-bottom: 20px;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+
+        .story-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            transition: box-shadow 0.3s;
+        }
+
+        .faq-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .faq-question {
+            width: 100%;
+            text-align: left;
+            padding: 20px;
+            background: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            transition: background 0.3s;
+        }
+
+        .faq-question:hover {
+            background: #f8f9fa;
+        }
+
+        .faq-question::after {
+            content: '+';
+            font-size: 24px;
+            color: #667eea;
+            transition: transform 0.3s;
+        }
+
+        .faq-question.active::after {
+            transform: rotate(45deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            padding: 0 20px;
+        }
+
+        .faq-answer.active {
+            max-height: 500px;
+            padding: 0 20px 20px 20px;
+        }
+
+        .faq-answer p {
+            line-height: 1.8;
+            color: #555;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .nav {
+                display: none;
+                position: absolute;
+                top: 70px;
+                right: 20px;
+                background: rgba(102, 126, 234, 0.98);
+                padding: 20px;
+                border-radius: 10px;
+                flex-direction: column;
+                gap: 15px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            }
+
+            .nav.active {
+                display: flex;
+            }
+
+            .btn-secondary {
+                margin-left: 0;
+                margin-top: 15px;
+            }
+
+            .hero-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .hero-content {
+                text-align: center;
+            }
+
+            .hero-image {
+                order: -1;
+            }
+
+            .hero-image img {
+                max-height: 300px;
+            }
+
+            .story-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .story-grid > div:first-child {
+                order: 1;
+            }
+
+            .story-grid > div:last-child {
+                order: 2;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-title">「今着いた。」</div>
+                <div class="logo-subtitle">最安の入退室通知サービス</div>
+            </div>
+            <button class="menu-toggle" id="menuToggle" aria-label="メニュー">☰</button>
+            <nav class="nav" id="navMenu">
+                <a href="#features">機能</a>
+                <a href="#pricing">料金</a>
+                <a href="tokusho.html">特定商取引法</a>
+                <a href="login.html">ログイン</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1>塾・習い事の入退室通知を<br>業界最安の月額1,300円（税込）で</h1>
+                <p>スマホ・タブレット・PCがあれば今日から運用可能<br>生徒5名まで無料でお試しできます</p>
+                <div>
+                    <a href="signup.html" class="btn">5名まで無料で始める</a>
+                    <a href="login.html" class="btn btn-secondary">ログイン</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="トップビュー.png" alt="保護者の安心">
+            </div>
+        </div>
+    </section>
+
+    <section class="section animate-on-scroll fade-in-up" id="features">
+        <h2>選ばれる3つの理由</h2>
+        <div class="features">
+            <div class="feature animate-on-scroll scale-in">
+                <div class="feature-icon">💰</div>
+                <h3>月額1,300円（税込）の低価格</h3>
+                <p>入退室通知に特化することで、従来システム（月額3,000円〜）の半額以下を実現。専用機器不要で導入コストもゼロ。</p>
+            </div>
+            <div class="feature animate-on-scroll scale-in">
+                <div class="feature-icon">📱</div>
+                <h3>スマホ・PC・タブレット対応</h3>
+                <p>カメラ付きの端末があればOK。管理画面からQRコード付きIDカードを印刷して生徒に配布。</p>
+            </div>
+            <div class="feature animate-on-scroll scale-in">
+                <div class="feature-icon">🎯</div>
+                <h3>5名まで無料でお試し</h3>
+                <p>入退室通知・履歴管理・QRコード対応。まずは無料で使い心地を確認してください。</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section animate-on-scroll fade-in-up">
+        <h2>よくある質問</h2>
+        <div class="faq-container">
+            <div class="faq-item">
+                <button class="faq-question">
+                    初期費用はかかりますか？
+                </button>
+                <div class="faq-answer">
+                    <p>初期費用は一切かかりません。無料プランは完全無料、有料プランも月額1,300円（税込）のみで導入できます。アカウント登録後、すぐにご利用いただけます。</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    専用機器の購入や用意は必要ですか？
+                </button>
+                <div class="faq-answer">
+                    <p>専用機器の購入は不要です。カメラ付きのスマホ・タブレット・PCがあれば、今すぐ運用を開始できます。QRコード付きIDカードは、管理画面から印刷して生徒に配布するだけです。ラミネート加工をすることで長期間使用できます。</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    最低利用期間の縛りはありますか？
+                </button>
+                <div class="faq-answer">
+                    <p>最低利用期間の縛りは一切ありません。有料プランはいつでも解約可能で、解約後は無料プラン（5名まで）に自動的に切り替わります。違約金なども発生しません。</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    導入を決めてから運用開始までどのくらいかかりますか？
+                </button>
+                <div class="faq-answer">
+                    <p>最短で当日から運用開始できます。アカウント登録（1分）→生徒情報登録（1名あたり1分）→IDカード印刷・配布→端末設置で完了です。特別な設定や工事は一切不要。お手持ちの端末を教室入口に設置するだけで、すぐに入退室通知が始まります。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing animate-on-scroll fade-in-up" id="pricing">
+        <div class="pricing-cards">
+            <div class="pricing-card animate-on-scroll scale-in">
+                <h3>無料プラン</h3>
+                <div class="price">¥0<span>/月</span></div>
+                <ul style="list-style: none; padding: 0; margin: 20px 0;">
+                    <li>✓ 生徒5名まで登録</li>
+                    <li>✓ メール通知</li>
+                    <li>✓ QRコード対応</li>
+                    <li>✓ カード印刷機能</li>
+                    <li>✓ 入室履歴・ログ管理</li>
+                </ul>
+                <a href="signup.html" class="btn">無料で始める</a>
+            </div>
+            <div class="pricing-card featured animate-on-scroll scale-in">
+                <h3>有料プラン</h3>
+                <div class="price">¥1,300<span>/月（税込）</span></div>
+                <ul style="list-style: none; padding: 0; margin: 20px 0;">
+                    <li>✓ <strong style="color: #e74c3c;">無制限</strong>に登録</li>
+                    <li>✓ メール通知</li>
+                    <li>✓ QRコード対応</li>
+                    <li>✓ カード印刷機能</li>
+                    <li>✓ 入室履歴・ログ管理</li>
+                </ul>
+                <a href="signup.html" class="btn">今すぐ始める</a>
+            </div>
+        </div>
+    </section>
+
+    <div style="background: #f8f9fa; padding: 60px 20px; margin: 80px 0 0 0;">
+        <section class="section animate-on-scroll fade-in-up" style="max-width: 1200px; margin: 0 auto; background: transparent; padding: 0;">
+            <h2 style="text-align: center; margin-bottom: 10px;">他社サービスとの比較</h2>
+            <p style="text-align: center; margin-bottom: 40px; color: #666; font-size: 16px;">入退室通知と入室履歴の管理、この2つに特化して他社の半分以下の価格となります。</p>
+            <div style="max-width: 900px; margin: 0 auto; overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <th style="padding: 15px; text-align: center; border: 1px solid #ddd;">項目</th>
+                        <th style="padding: 15px; text-align: center; border: 1px solid #ddd; background: #5568d3;">「今着いた。」</th>
+                        <th style="padding: 15px; text-align: center; border: 1px solid #ddd;">A社</th>
+                        <th style="padding: 15px; text-align: center; border: 1px solid #ddd;">B社</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 15px; border: 1px solid #ddd; font-weight: 600; text-align: center;">月額料金</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center; background: #fff9e6;"><strong style="color: #e74c3c; font-size: 18px;">¥1,300</strong><br><span style="font-size: 12px; color: #666;">（税込）</span></td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">¥3,300</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">1人¥300〜</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 15px; border: 1px solid #ddd; font-weight: 600; text-align: center;">入退室通知</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓ メール</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓ LINE（オプション）</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px; border: 1px solid #ddd; font-weight: 600; text-align: center;">QRコード対応</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 15px; border: 1px solid #ddd; font-weight: 600; text-align: center;">入室履歴・ログ管理</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px; border: 1px solid #ddd; font-weight: 600; text-align: center;">講師勤怠管理</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">-</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">-</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 15px; border: 1px solid #ddd; font-weight: 600; text-align: center;">保護者コミュニケーション</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">-</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">-</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓ メッセージ機能</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px; border: 1px solid #ddd; font-weight: 600; text-align: center;">月謝決済機能</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">-</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">-</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 15px; border: 1px solid #ddd; font-weight: 600; text-align: center;">振替サポート</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">-</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">-</td>
+                        <td style="padding: 15px; border: 1px solid #ddd; text-align: center;">✓</td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+            <p style="text-align: center; margin-top: 30px; color: #555; font-size: 16px;">
+                <strong>入退室通知に特化</strong>することで、<strong style="color: #667eea;">他社の半額以下</strong>を実現しました。
+            </p>
+        </section>
+    </div>
+
+    <section class="section animate-on-scroll fade-in-up">
+        <h2>ご利用の流れ（3ステップで開始）</h2>
+        <div class="features">
+            <div class="feature animate-on-scroll scale-in">
+                <div class="feature-icon">1️⃣</div>
+                <h3>無料アカウント登録</h3>
+                <p>メールアドレスとパスワードだけで登録完了。5名まで無料で使えます。</p>
+            </div>
+            <div class="feature animate-on-scroll scale-in">
+                <div class="feature-icon">2️⃣</div>
+                <h3>生徒情報を登録してカード印刷</h3>
+                <p>生徒名と保護者のメールアドレスを登録。管理画面からQRコード付きIDカードを印刷して生徒に配布。<strong>（ラミネート加工推奨）</strong></p>
+            </div>
+            <div class="feature animate-on-scroll scale-in">
+                <div class="feature-icon">3️⃣</div>
+                <h3>端末を設置して運用開始</h3>
+                <p>カメラ付きのスマホ・タブレット・PCを教室入口に設置。生徒がカードをかざすと、保護者に自動でメール通知が届きます。</p>
+            </div>
+        </div>
+    </section>
+
+    <div style="background: #f8f9fa; padding: 60px 20px; margin: 0;">
+        <section class="section animate-on-scroll fade-in-up" style="max-width: 1200px; margin: 0 auto; background: transparent; padding: 0;">
+            <h2 style="text-align: center; margin-bottom: 50px;">なぜ「今着いた。」を開発したのか</h2>
+            <div class="story-grid">
+                <div>
+                    <p style="line-height: 2; font-size: 16px; color: #555; text-align: left;">
+                        私は2025年時点で8年間、東京都世田谷区経堂でiTeen経堂駅前校という習い事の教室を運営してきました。その中で実感しているのは<strong>保護者への入退室通知が、教室への信頼と継続率を高めている</strong>ということです。
+                    </p>
+                    <p style="line-height: 2; font-size: 16px; color: #555; margin-top: 20px; text-align: left;">
+                        親は子供の居場所のお知らせが届くと、とても安心してもらえるのです。<br>
+                        「子どもが無事に着いた」という安心感は、保護者が教室を信頼し続ける理由になります。
+                    </p>
+                    <p style="line-height: 2; font-size: 16px; color: #555; margin-top: 20px; text-align: left;">
+                        多くの入室管理システムは月額3,000円〜5,000円や生徒一人あたり数百円とかと様々な便利機能がついていますが、<strong>入退室通知という最低限の機能に絞ったより低価格システムがなかなかありませんでした</strong>。
+                    </p>
+                    <p style="line-height: 2; font-size: 16px; color: #555; margin-top: 20px; text-align: left;">
+                        最低限でいいんだよなあ。千円くらいでないかな？とずっと感じていました。
+                    </p>
+                    <p style="line-height: 2; font-size: 16px; color: #555; margin-top: 20px; text-align: left;">
+                        そこで、必要最低限の機能に絞ることで<strong>月額1,300円（税込）</strong>を実現したシステムを開発しました。スマホ・タブレット・PCのブラウザだけで使えるから、専用機器も不要です。まずは5名まで無料でお試しください。
+                    </p>
+                    <p style="line-height: 2; font-size: 16px; color: #555; margin-top: 30px; text-align: right; font-weight: 600;">
+                        トップステア株式会社　鈴木岳史
+                    </p>
+                </div>
+                <div>
+                    <img src="iteen-kyodo.jpg" alt="iTeen経堂駅前校" style="width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="tokusho.html">特定商取引法に基づく表記</a>
+            <a href="privacy.html">プライバシーポリシー</a>
+        </div>
+        <p>&copy; 2025 トップステア株式会社. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // ハンバーガーメニューの開閉
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuToggle = document.getElementById('menuToggle');
+            const navMenu = document.getElementById('navMenu');
+
+            menuToggle.addEventListener('click', () => {
+                navMenu.classList.toggle('active');
+            });
+
+            // メニュー項目をクリックしたらメニューを閉じる
+            navMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    navMenu.classList.remove('active');
+                });
+            });
+
+            // メニュー外をクリックしたらメニューを閉じる
+            document.addEventListener('click', (e) => {
+                if (!menuToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                    navMenu.classList.remove('active');
+                }
+            });
+
+            // FAQアコーディオンの開閉
+            const faqQuestions = document.querySelectorAll('.faq-question');
+            faqQuestions.forEach(question => {
+                question.addEventListener('click', () => {
+                    const answer = question.nextElementSibling;
+                    const isActive = question.classList.contains('active');
+
+                    // すべてのFAQを閉じる
+                    faqQuestions.forEach(q => {
+                        q.classList.remove('active');
+                        q.nextElementSibling.classList.remove('active');
+                    });
+
+                    // クリックされたFAQが閉じていた場合は開く
+                    if (!isActive) {
+                        question.classList.add('active');
+                        answer.classList.add('active');
+                    }
+                });
+            });
+        });
+
+        // スクロールアニメーション
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    // 少し遅延を加えて順番にアニメーション
+                    setTimeout(() => {
+                        entry.target.classList.add('animated');
+                    }, index * 200);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        // ページ読み込み後にすべての .animate-on-scroll 要素を監視
+        document.addEventListener('DOMContentLoaded', () => {
+            const animateElements = document.querySelectorAll('.animate-on-scroll');
+            animateElements.forEach((el) => {
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>
