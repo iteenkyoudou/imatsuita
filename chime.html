@@ -446,6 +446,34 @@
         </div>
 
         <div class="card">
+            <h2 style="margin-bottom: 20px;">チャイム音の設定</h2>
+            <div id="soundMessage" class="message"></div>
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <label style="margin-bottom: 0;">
+                        <input type="radio" name="soundType" value="default" checked onchange="switchSoundType('default')">
+                        既定の学校チャイム音
+                    </label>
+                    <label style="margin-bottom: 0;">
+                        <input type="radio" name="soundType" value="custom" onchange="switchSoundType('custom')">
+                        カスタム音声ファイル
+                    </label>
+                </div>
+            </div>
+            <div id="customSoundArea" style="display: none;">
+                <div class="form-group">
+                    <label for="soundFileInput">音声ファイルをアップロード（MP3 / WAV / OGG、最大5MB）</label>
+                    <input type="file" id="soundFileInput" accept="audio/mp3,audio/wav,audio/ogg,audio/mpeg,.mp3,.wav,.ogg" onchange="handleSoundFileUpload(event)" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 100%; max-width: 400px;">
+                </div>
+                <div id="currentSoundInfo" style="display: none; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px;">
+                    <span style="font-size: 13px; color: #666;">現在のファイル: </span>
+                    <strong id="currentSoundName"></strong>
+                    <button class="btn btn-danger" onclick="removeCustomSound()" style="margin-left: 10px; padding: 4px 10px; font-size: 12px;">削除</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
             <h2 style="margin-bottom: 20px;">新しいスケジュールを登録</h2>
             <div id="addMessage" class="message"></div>
             <form id="addScheduleForm">
@@ -597,6 +625,9 @@
             }
         }
 
+        let customSoundDataUrl = null;
+        let customSoundName = '';
+
         // ===== AudioContext管理 =====
 
         function ensureAudioContext() {
@@ -607,6 +638,96 @@
                 audioContext.resume();
             }
             return audioContext;
+        }
+
+        // ===== カスタム音声 =====
+
+        function switchSoundType(type) {
+            const customArea = document.getElementById('customSoundArea');
+            if (type === 'custom') {
+                customArea.style.display = 'block';
+                localStorage.setItem('chimeSoundType', 'custom');
+            } else {
+                customArea.style.display = 'none';
+                localStorage.setItem('chimeSoundType', 'default');
+            }
+        }
+
+        function handleSoundFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // サイズチェック（5MB）
+            if (file.size > 5 * 1024 * 1024) {
+                showMessage('soundMessage', 'ファイルサイズは5MB以下にしてください', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                customSoundDataUrl = e.target.result;
+                customSoundName = file.name;
+                localStorage.setItem('chimeCustomSound', customSoundDataUrl);
+                localStorage.setItem('chimeCustomSoundName', customSoundName);
+                updateCustomSoundUI();
+                showMessage('soundMessage', '音声ファイルを設定しました', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeCustomSound() {
+            customSoundDataUrl = null;
+            customSoundName = '';
+            localStorage.removeItem('chimeCustomSound');
+            localStorage.removeItem('chimeCustomSoundName');
+            document.getElementById('soundFileInput').value = '';
+            updateCustomSoundUI();
+            // 既定に戻す
+            document.querySelector('input[name="soundType"][value="default"]').checked = true;
+            switchSoundType('default');
+            showMessage('soundMessage', '音声ファイルを削除しました。既定のチャイム音に戻りました。', 'success');
+        }
+
+        function updateCustomSoundUI() {
+            const infoEl = document.getElementById('currentSoundInfo');
+            const nameEl = document.getElementById('currentSoundName');
+            if (customSoundDataUrl) {
+                infoEl.style.display = 'block';
+                nameEl.textContent = customSoundName;
+            } else {
+                infoEl.style.display = 'none';
+            }
+        }
+
+        function loadCustomSoundSettings() {
+            const soundType = localStorage.getItem('chimeSoundType') || 'default';
+            customSoundDataUrl = localStorage.getItem('chimeCustomSound');
+            customSoundName = localStorage.getItem('chimeCustomSoundName') || '';
+
+            if (soundType === 'custom' && customSoundDataUrl) {
+                document.querySelector('input[name="soundType"][value="custom"]').checked = true;
+                switchSoundType('custom');
+                updateCustomSoundUI();
+            }
+        }
+
+        function playChimeSound() {
+            const soundType = localStorage.getItem('chimeSoundType') || 'default';
+            if (soundType === 'custom' && customSoundDataUrl) {
+                playCustomSound();
+            } else {
+                playWestminsterChime();
+            }
+        }
+
+        function playCustomSound() {
+            const audio = new Audio(customSoundDataUrl);
+            audio.play().catch(err => {
+                console.error('カスタム音声の再生に失敗:', err);
+                // フォールバック: 既定のチャイム音
+                playWestminsterChime();
+            });
         }
 
         // ===== ウェストミンスターチャイム（キンコンカンコン） =====
@@ -940,7 +1061,7 @@
 
                 // チャイムを鳴らす
                 lastPlayedKey = playKey;
-                playWestminsterChime();
+                playChimeSound();
                 showChimeNotification(schedule.label || currentTime);
                 break;
             }
@@ -949,7 +1070,7 @@
         function testPlayChime() {
             // テスト再生（AudioContext初期化を兼ねる）
             ensureAudioContext();
-            playWestminsterChime();
+            playChimeSound();
             showChimeNotification('テスト再生');
         }
 
@@ -1086,6 +1207,7 @@
             if (!checkAuth()) return;
 
             loadSchedules();
+            loadCustomSoundSettings();
 
             // 前回稼働中だった場合は自動再開
             if (localStorage.getItem('chimeActive') === 'true') {
