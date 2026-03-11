@@ -1029,6 +1029,35 @@
         }
 
         // ===== スケジューラ =====
+        // Web Workerを使ってバックグラウンドタブでも正確にタイマーを動かす
+        let chimeWorker = null;
+
+        function createChimeWorker() {
+            const workerCode = `
+                let timerId = null;
+                self.onmessage = function(e) {
+                    if (e.data === 'start') {
+                        if (timerId) clearInterval(timerId);
+                        timerId = setInterval(() => {
+                            self.postMessage('tick');
+                        }, 1000);
+                    } else if (e.data === 'stop') {
+                        if (timerId) {
+                            clearInterval(timerId);
+                            timerId = null;
+                        }
+                    }
+                };
+            `;
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const worker = new Worker(URL.createObjectURL(blob));
+            worker.onmessage = function(e) {
+                if (e.data === 'tick') {
+                    checkAndPlayChime();
+                }
+            };
+            return worker;
+        }
 
         function toggleChime() {
             if (isChimeActive) {
@@ -1039,7 +1068,7 @@
         }
 
         function startChimeScheduler() {
-            if (schedulerInterval) return;
+            if (chimeWorker) return;
 
             // AudioContextをユーザー操作で初期化
             ensureAudioContext();
@@ -1049,12 +1078,25 @@
             updateToggleButton();
             updateStatusUI();
 
-            schedulerInterval = setInterval(() => {
-                checkAndPlayChime();
-            }, 1000);
+            // Web Workerでバックグラウンドでも正確に動作
+            try {
+                chimeWorker = createChimeWorker();
+                chimeWorker.postMessage('start');
+            } catch (e) {
+                // Web Worker非対応時はsetIntervalにフォールバック
+                console.warn('Web Worker使用不可、setIntervalにフォールバック:', e);
+                schedulerInterval = setInterval(() => {
+                    checkAndPlayChime();
+                }, 1000);
+            }
         }
 
         function stopChimeScheduler() {
+            if (chimeWorker) {
+                chimeWorker.postMessage('stop');
+                chimeWorker.terminate();
+                chimeWorker = null;
+            }
             if (schedulerInterval) {
                 clearInterval(schedulerInterval);
                 schedulerInterval = null;
@@ -1247,9 +1289,13 @@
             }, 60000);
         });
 
-        // タブ復帰時にチェック
+        // タブ復帰時にAudioContextを再開してチェック
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && isChimeActive) {
+                // バックグラウンドでAudioContextがsuspendされた場合に備えて再開
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
                 checkAndPlayChime();
                 updateStatusUI();
             }
