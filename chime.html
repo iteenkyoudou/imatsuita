@@ -730,17 +730,141 @@
             });
         }
 
-        // ===== ウェストミンスターチャイム（キンコンカンコン） =====
+        // ===== WAVデータ生成（バックグラウンドタブ用） =====
+        // AudioContextはバックグラウンドでsuspendされるため、
+        // WAVファイルをメモリ上で生成しAudio要素で再生する
 
-        function playWestminsterChime() {
-            const ctx = ensureAudioContext();
+        function generateWestminsterWav() {
+            const sampleRate = 44100;
+            const totalDuration = 4.0; // 秒
+            const numSamples = Math.floor(sampleRate * totalDuration);
+            const buffer = new Float32Array(numSamples);
 
-            // 学校チャイムの音階: G#4 -> F#4 -> E4 -> B3
             const melody = [
                 { freq: 415.30, time: 0 },      // G#4 キン
                 { freq: 369.99, time: 0.75 },    // F#4 コン
                 { freq: 329.63, time: 1.5 },     // E4  カン
                 { freq: 246.94, time: 2.25 }     // B3  コン
+            ];
+
+            const noteDuration = 1.5;
+
+            melody.forEach(note => {
+                addBellNote(buffer, sampleRate, note.freq, note.time, noteDuration);
+            });
+
+            return floatBufferToWavDataUri(buffer, sampleRate);
+        }
+
+        function addBellNote(buffer, sampleRate, frequency, startOffset, duration) {
+            addPartial(buffer, sampleRate, frequency, startOffset, duration, 0.3);
+            addPartial(buffer, sampleRate, frequency * 2, startOffset, duration * 0.6, 0.15);
+            addPartial(buffer, sampleRate, frequency * 3, startOffset, duration * 0.4, 0.08);
+        }
+
+        function addPartial(buffer, sampleRate, freq, startOffset, duration, maxGain) {
+            const startSample = Math.floor(startOffset * sampleRate);
+            const numSamples = Math.floor(duration * sampleRate);
+
+            for (let i = 0; i < numSamples && (startSample + i) < buffer.length; i++) {
+                const t = i / sampleRate;
+                // 指数減衰エンベロープ
+                const envelope = maxGain * Math.exp(-3 * t / duration);
+                const sample = envelope * Math.sin(2 * Math.PI * freq * t);
+                buffer[startSample + i] += sample;
+            }
+        }
+
+        function floatBufferToWavDataUri(buffer, sampleRate) {
+            // クリッピング防止
+            let maxVal = 0;
+            for (let i = 0; i < buffer.length; i++) {
+                if (Math.abs(buffer[i]) > maxVal) maxVal = Math.abs(buffer[i]);
+            }
+            const scale = maxVal > 1 ? 1 / maxVal : 1;
+
+            const numSamples = buffer.length;
+            const bytesPerSample = 2;
+            const dataSize = numSamples * bytesPerSample;
+            const headerSize = 44;
+            const totalSize = headerSize + dataSize;
+
+            const arrayBuffer = new ArrayBuffer(totalSize);
+            const view = new DataView(arrayBuffer);
+
+            // WAVヘッダー
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, totalSize - 8, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // PCM
+            view.setUint16(22, 1, true); // mono
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * bytesPerSample, true);
+            view.setUint16(32, bytesPerSample, true);
+            view.setUint16(34, 16, true); // 16bit
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            // PCMデータ
+            for (let i = 0; i < numSamples; i++) {
+                const s = Math.max(-1, Math.min(1, buffer[i] * scale));
+                view.setInt16(headerSize + i * 2, s * 32767, true);
+            }
+
+            // Base64エンコード
+            let binary = '';
+            const bytes = new Uint8Array(arrayBuffer);
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return 'data:audio/wav;base64,' + btoa(binary);
+        }
+
+        function writeString(view, offset, str) {
+            for (let i = 0; i < str.length; i++) {
+                view.setUint8(offset + i, str.charCodeAt(i));
+            }
+        }
+
+        // WAVデータをキャッシュ
+        let cachedChimeWavUri = null;
+
+        function getChimeWavUri() {
+            if (!cachedChimeWavUri) {
+                cachedChimeWavUri = generateWestminsterWav();
+            }
+            return cachedChimeWavUri;
+        }
+
+        // ===== ウェストミンスターチャイム（キンコンカンコン） =====
+
+        function playWestminsterChime() {
+            // バックグラウンドでも鳴るようにAudio要素（WAVデータURI）で再生
+            try {
+                const wavUri = getChimeWavUri();
+                const audio = new Audio(wavUri);
+                audio.play().then(() => {
+                    console.log('WAV再生成功');
+                }).catch(err => {
+                    console.warn('WAV再生失敗、AudioContextで再試行:', err);
+                    playWestminsterChimeViaContext();
+                });
+            } catch (e) {
+                console.warn('WAV生成失敗、AudioContextで再試行:', e);
+                playWestminsterChimeViaContext();
+            }
+        }
+
+        function playWestminsterChimeViaContext() {
+            const ctx = ensureAudioContext();
+
+            const melody = [
+                { freq: 415.30, time: 0 },
+                { freq: 369.99, time: 0.75 },
+                { freq: 329.63, time: 1.5 },
+                { freq: 246.94, time: 2.25 }
             ];
 
             const noteDuration = 1.5;
@@ -753,11 +877,8 @@
         function playBellNote(ctx, frequency, startOffset, duration) {
             const startTime = ctx.currentTime + startOffset;
 
-            // 基音
             createPartial(ctx, frequency, startTime, duration, 0.3);
-            // 倍音（ベルの特徴的な音色）
             createPartial(ctx, frequency * 2, startTime, duration * 0.6, 0.15);
-            // 高次倍音
             createPartial(ctx, frequency * 3, startTime, duration * 0.4, 0.08);
         }
 
@@ -771,7 +892,6 @@
             osc.frequency.value = freq;
             osc.type = 'sine';
 
-            // ベル風エンベロープ: 素早いアタック、緩やかなディケイ
             gain.gain.setValueAtTime(maxGain, startTime);
             gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
@@ -1240,6 +1360,19 @@
             setTimeout(() => {
                 el.style.display = 'none';
             }, 5000);
+
+            // OS通知（バックグラウンドタブでも表示される）
+            if (Notification.permission === 'granted') {
+                try {
+                    new Notification('チャイム', {
+                        body: label,
+                        icon: 'logo.png',
+                        requireInteraction: false
+                    });
+                } catch (e) {
+                    console.warn('通知の表示に失敗:', e);
+                }
+            }
         }
 
         // ===== ユーティリティ =====
@@ -1277,6 +1410,14 @@
 
             loadSchedules();
             loadCustomSoundSettings();
+
+            // WAVデータを事前生成（初回アクセス時にキャッシュ）
+            getChimeWavUri();
+
+            // 通知権限をリクエスト
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
 
             // 前回稼働中だった場合は自動再開
             if (localStorage.getItem('chimeActive') === 'true') {
