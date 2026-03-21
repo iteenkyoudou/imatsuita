@@ -248,7 +248,7 @@
                     <a href="entry.html" class="btn btn-primary" style="text-decoration: none; display: inline-block;">生徒入室画面</a>
                     <a href="chime.html" class="btn btn-primary" style="text-decoration: none; display: inline-block;">チャイム設定</a>
                     <button class="btn btn-primary" onclick="printCards()">カード印刷</button>
-                    <button class="btn btn-primary" onclick="document.getElementById('emailSettingsSection').scrollIntoView({behavior:'smooth'})">メール設定</button>
+                    <a href="email-settings.html" class="btn btn-primary" style="text-decoration: none; display: inline-block;">メール設定</a>
                     <button class="btn btn-secondary" onclick="logout()">ログアウト</button>
                 </div>
             </div>
@@ -310,51 +310,6 @@
             </div>
 
             <div id="studentsTable"></div>
-        </div>
-
-        <div class="card" id="emailSettingsSection">
-            <h2 style="margin-bottom: 20px;">メール通知設定</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
-                入室・退室時に保護者に送信されるメールの内容をカスタマイズできます。<br>
-                テンプレート変数: <code>{student_name}</code>（生徒名）、<code>{parent_name}</code>（保護者名）、<code>{classroom_name}</code>（教室名）、<code>{time}</code>（時刻）
-            </p>
-            <div id="emailSettingsMessage" class="message"></div>
-
-            <div class="form-group">
-                <label for="senderName">差出人名</label>
-                <input type="text" id="senderName" placeholder="例: ○○教室">
-                <small style="color: #999;">未設定の場合は教室名が使用されます</small>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-                <div>
-                    <h3 style="margin-bottom: 10px; color: #667eea;">入室通知メール</h3>
-                    <div class="form-group">
-                        <label for="entryEmailSubject">件名</label>
-                        <input type="text" id="entryEmailSubject" placeholder="例: 【入室通知】{student_name}さんが{classroom_name}に入室しました">
-                    </div>
-                    <div class="form-group">
-                        <label for="entryEmailBody">本文</label>
-                        <textarea id="entryEmailBody" rows="8" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; resize: vertical;" placeholder="例:&#10;{parent_name} 様&#10;&#10;お子様の {student_name} さんが「{classroom_name}」に入室しました。&#10;&#10;入室時刻: {time}"></textarea>
-                    </div>
-                </div>
-                <div>
-                    <h3 style="margin-bottom: 10px; color: #dc3545;">退室通知メール</h3>
-                    <div class="form-group">
-                        <label for="exitEmailSubject">件名</label>
-                        <input type="text" id="exitEmailSubject" placeholder="例: 【退室通知】{student_name}さんが{classroom_name}から退室しました">
-                    </div>
-                    <div class="form-group">
-                        <label for="exitEmailBody">本文</label>
-                        <textarea id="exitEmailBody" rows="8" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; resize: vertical;" placeholder="例:&#10;{parent_name} 様&#10;&#10;お子様の {student_name} さんが「{classroom_name}」から退室しました。&#10;&#10;退室時刻: {time}"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <button class="btn btn-primary" onclick="saveEmailSettings()">メール設定を保存</button>
-                <button class="btn btn-secondary" onclick="resetEmailSettings()">デフォルトに戻す</button>
-            </div>
         </div>
 
         <div class="card">
@@ -496,7 +451,6 @@
             loadStudents();
             loadStats();
             loadHistory();
-            loadEmailSettings();
 
             // 検索機能
             document.getElementById('searchInput').addEventListener('input', (e) => {
@@ -1018,64 +972,6 @@
                 console.error('アップグレードエラー:', error);
                 alert('エラーが発生しました: ' + error.message);
             }
-        }
-
-        // ===== メール設定 =====
-
-        async function loadEmailSettings() {
-            try {
-                const response = await authFetch(`${API_URL}/email-settings`);
-                const data = await response.json();
-
-                document.getElementById('senderName').value = data.sender_name || '';
-                document.getElementById('entryEmailSubject').value = data.entry_email_subject || '';
-                document.getElementById('entryEmailBody').value = data.entry_email_body || '';
-                document.getElementById('exitEmailSubject').value = data.exit_email_subject || '';
-                document.getElementById('exitEmailBody').value = data.exit_email_body || '';
-            } catch (error) {
-                console.error('メール設定の読み込みエラー:', error);
-            }
-        }
-
-        async function saveEmailSettings() {
-            try {
-                const response = await authFetch(`${API_URL}/email-settings`, {
-                    method: 'PUT',
-                    body: JSON.stringify({
-                        sender_name: document.getElementById('senderName').value,
-                        entry_email_subject: document.getElementById('entryEmailSubject').value,
-                        entry_email_body: document.getElementById('entryEmailBody').value,
-                        exit_email_subject: document.getElementById('exitEmailSubject').value,
-                        exit_email_body: document.getElementById('exitEmailBody').value
-                    })
-                });
-
-                if (response.ok) {
-                    showEmailMessage('メール設定を保存しました', 'success');
-                } else {
-                    throw new Error('保存に失敗しました');
-                }
-            } catch (error) {
-                showEmailMessage('エラー: ' + error.message, 'error');
-            }
-        }
-
-        function resetEmailSettings() {
-            if (!confirm('メール設定をデフォルトに戻しますか？')) return;
-            document.getElementById('senderName').value = '';
-            document.getElementById('entryEmailSubject').value = '';
-            document.getElementById('entryEmailBody').value = '';
-            document.getElementById('exitEmailSubject').value = '';
-            document.getElementById('exitEmailBody').value = '';
-            saveEmailSettings();
-        }
-
-        function showEmailMessage(message, type) {
-            const el = document.getElementById('emailSettingsMessage');
-            el.textContent = message;
-            el.className = `message ${type}`;
-            el.style.display = 'block';
-            setTimeout(() => { el.style.display = 'none'; }, 3000);
         }
 
         // 決済完了確認
