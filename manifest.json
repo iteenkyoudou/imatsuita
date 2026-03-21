@@ -1,0 +1,21 @@
+{
+  "name": "スクールチャイム",
+  "short_name": "チャイム",
+  "description": "スケジュールに合わせてチャイムを鳴らすアプリ",
+  "start_url": "/chime.html",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#667eea",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
